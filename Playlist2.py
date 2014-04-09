@@ -31,6 +31,7 @@ def startup():
     #third arg (returnfile2) = output file (from which the needed information -- gaia stuff -- will be read)
     #go into relevant directory, check for song files
     songList = []
+    songStringList = []
     
     thisDir = os.getcwd()
     songID = 0
@@ -46,17 +47,22 @@ def startup():
         print("in for loop, f is " + f)
         if isfile(f):
             songList.append(f)"""
-    #subprocess.call(["./streaming_extractor_archivemusic", "music/" + filenames[0], "audioTest"])
-# I know the following is roundabout, but it works...
+    # subprocess.call(["./streaming_extractor_archivemusic", "music/" + filenames[0], "audioTest"])
+    # I know the following is roundabout, but it works...
     for song in songList:
-        songString = str(song) + str(songID)
+        songString = str(song) + str(songID) + ".json"
+        songStringList.append(songString)
         print("song equals " + song + " and songID equals " + str(songID))
         subprocess.call(["./streaming_extractor_archivemusic", "music/" + filenames[songID], songString])
         songID+=1
         #now: go into songString, and create an array for that song with its properties
         #then add that to the big list of songs
+        json_data = open(songString)
+        data = json.load(json_data)
+        #now can access any descriptors with data[key1][key2]
     #add all of these things to a shelve module
     #create a boolean within the shelve module that will explain that we have already made this list
+        #sum of squared distances (Euclidean distance)
 
 """def onclickMood:
     if mood in moods:"""
