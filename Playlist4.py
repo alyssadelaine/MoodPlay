@@ -7,6 +7,7 @@ import shelve
 import json
 import numpy as np
 import math
+import random
 
 #lists to be stored in shelve
 #list of songs
@@ -41,10 +42,19 @@ def main():
         db.close()
     #onclickMood:
 #        onclickMood(mood)
-    onclickplay:
-        onClickPlay(dbname, songName, mood, time)
+ #   onclickplay:
+#        onClickPlay(dbname, songName, mood, time)
     printMatrix(matrix, songList)
-    
+    db = shelve.open(dbname)
+    songList = db['songList']
+    for song in songList:
+        print song
+    song = input('Enter a song choice')
+    mood = 'None'
+    time = 'morning'
+    db.close()
+    onClickPlay(dbname, song, mood, time)
+        
     
 
 def startup(dbname):
@@ -169,8 +179,10 @@ def startup(dbname):
 
         #features: danceability, chords, instrumental, female, alternative, blues, electronic, folkcountry, funksoulrnb, jazz, pop, raphiphop, rock
 
-"""def onclickMood:
-    if mood in moods:"""
+"""
+def playList(generatedList):
+    for song in generatedList:
+        play using mplayer"""
 
 def createGenerationList(dbname, songName, mood, time):
     db = shelve.open(dbname)
@@ -183,31 +195,108 @@ def createGenerationList(dbname, songName, mood, time):
     generationSongList = []
     generationNumListToSave = []
     generationSongListToSave = []
+    #create generation profile info for the similarity between the song being played and each other song
     for song in songList:
         indexSong2 = songList.index(song)
         if indexSongPlayed > indexSong2:
             similarity = similarityMatrix[indexSongPlayed][indexSong2]
-        else if indexSongPlayed < indexSong2:
+        elif indexSongPlayed < indexSong2:
             similarity = similarityMatrix[indexSong2][indexSongPlayed]
-        else if indexSongPlayed == indexSong2:
+        elif indexSongPlayed == indexSong2:
             continue
+        print("adding song " + song + "to list")
         generationSongList.append(song)
-        generationNum = totalSum + similarity*100
+        totalSum += similarity
+        generationNum = totalSum
         generationNumList.append(generationNum)
-        totalSum += generationNum
-    generationSongListToSave = generationSongList
-    generationNumListToSave = generationNumList
+
+    #add in songPicked to generationProfile to be saved
+    generationSongListToSave = list(generationSongList)
+    generationNumListToSave = list(generationNumList)
     totalSumToSave = totalSum
-    songPlayed = songList(indexSongPlayed)
+    songPlayed = songList[indexSongPlayed]
     generationSongListToSave.append(songPlayed)
-    similaritySongPlayed = 500
+    similaritySongPlayed = 5
     generationNumSongPlayed = totalSumToSave + similaritySongPlayed
     generationNumListToSave.append(generationNumSongPlayed)
     totalSumToSave += generationNumSongPlayed
+
     if mood != 'None':
-        db[mood]['bool'] = True
-        db[mood]['generationSongList'] = generationSongList
-        db[mood]['generationNumList'] = generationSongList
+        db[mood+'bool'] = True
+        db[mood+'generationSongList'] = generationSongListToSave
+        db[mood+'generationNumList'] = generationNumListToSave
+        db[mood+'totalSum'] = totalSumToSave
+    else:
+        db[time + 'bool'] = True
+        db[time+'generationSongList'] = generationSongListToSave
+        db[time+'generationNumList'] = generationNumListToSave
+        db[time+'totalSum'] = totalSumToSave
+    print ("generation num list is: ")
+    for num in generationNumList:
+        print num
+    generatedList = []
+    helpindex = 1
+    print("generation song list is: ")
+    for song in generationSongList:
+        print song
+    print("total sum is: " + str(totalSum))
+    helpindex2 = 1
+    print ("generation num list is: ")
+    for num in generationNumList:
+        print(str(helpindex2) + " num: " + str(num))
+        helpindex2 += 1
+    while len(generationSongList) > 1:
+        print ("try: " + str(helpindex))
+        randomNum = random.uniform(0, totalSum)
+        numInList = generationNumList[0]
+        currIndex = 0
+        print("randomNum is " + str(randomNum))
+        print("numInList is: " + str(numInList))
+        while randomNum > numInList:
+            currIndex += 1
+            numInList = generationNumList[currIndex]
+            print("numInList is now: " + str(numInList))
+        #now: numInList is just greater than the number generation
+        print("currIndex is " + str(currIndex))
+        print("numInList is " + str(numInList))
+        
+        if currIndex ==0:
+            songPicked = generationSongList.pop(0)
+        else:
+            songPicked = generationSongList.pop(currIndex - 1)
+        generatedList.append(songPicked)
+        if currIndex ==0 and len(generationSongList) > 0:
+            sumExtracted = generationNumList[currIndex + 1] - generationNumList[currIndex]
+            numTakenOut = generationNumList.pop(currIndex + 1)
+            indexToFix = currIndex + 1
+            
+        elif len(generationSongList) > 0:
+            sumExtracted = generationNumList[currIndex] - generationNumList[currIndex - 1]
+            print("sum Extracted was: "+ str(sumExtracted))
+            numTakenOut = generationNumList.pop(currIndex)
+            print("numTakenOut was " + str(numTakenOut))
+            #indexToFix = currIndex
+        for i in range (currIndex, len(generationNumList)):
+            print("generationNumList[" + str(i) + "] was: " + str(generationNumList[i]))
+            generationNumList[i] = generationNumList[i] - sumExtracted
+            print("generationNumList[" + str(i) + "] is now: " + str(generationNumList[i]))
+        totalSum = totalSum - sumExtracted
+        print("total sum is " + str(totalSum))
+        helpindex2 = 1
+        print ("generation num list is: ")
+        for num in generationNumList:
+            print(str(helpindex2) + " num: " + str(num))
+            helpindex2 += 1
+        """print ("try: " + str(helpindex))
+        for song in generationSongList:
+            print song"""
+        helpindex +=1
+    generatedList.append(generationSongList[0])
+    for song in generatedList:
+        print(song)
+    #playList(generatedList)
+
+
 
 def onClickPlay(dbname, songName, mood, time):
     #first: play song
